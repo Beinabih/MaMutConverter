@@ -22,10 +22,11 @@ def indent(elem, level=0):
             elem.tail = j
     return elem    
 
-def getCentroids(label):
-		centroid_feat = vigra.analysis.extractRegionFeatures(np.float32(labels), np.uint32(labels), features='RegionCenter')
-		regionCentroids = centroid_feat['RegionCenter']
-		return regionCentroids
+def getCentroids(labelimage):
+	centroid_feat = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
+	regionCentroids = centroid_feat['RegionCenter']
+	regionradii = centroid_feat['RegionRadii']
+	return regionCentroids, regionradii
 
 def getUniqueIds(timesteps):
 	unique_ids = {}
@@ -41,6 +42,42 @@ def getUniqueIds(timesteps):
 				uid += 1
 	return unique_ids
 
+def getShortname(string):
+	shortname = string[0:2]
+	for i,l in enumerate(string):
+		try:
+			if l == "_" :
+				shortname += string[i+1]
+				shortname += string[i+2]
+				shortname += string[i+3]
+			if shortname == 'WeReg':
+				shortname += string[i+7]
+				shortname += string[i+8]
+				shortname += string[i+9]
+
+		except IndexError:
+			break
+	return shortname.strip()
+
+def setFeatures(labelimage_filename):
+
+	with h5py.File(labelimage_filename, 'r') as h5raw:
+		labelimage = h5raw['/segmentation/labels'].value
+		features = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
+		print features.keys()
+
+		for key in features:
+			feature_string = key
+			feature_string = feature_string.replace('<', '_')
+			feature_string = feature_string.replace('>','')
+			feature_string = feature_string.replace(' ','')
+			if len(feature_string) > 10 :
+				shortname =  getShortname(feature_string)
+			else:
+				shortname = feature_string
+			newfeature = ET.SubElement(root[0][0][0], 'Feature feature="{}" name ="{}" shortname = "{}"'.format(feature_string, feature_string, shortname))
+
+
 if __name__ == '__main__':
 
 
@@ -55,6 +92,7 @@ if __name__ == '__main__':
 	track_id = 0
 	track_ref_dic = {}
 	ids = getUniqueIds(range(len(images)))
+	setFeatures(images[1])
 
 	for t,file_path in enumerate(images):
 		rawimage_filename = file_path
@@ -64,10 +102,10 @@ if __name__ == '__main__':
 		with h5py.File(rawimage_filename, 'r') as h5raw:
 			labels = h5raw['/segmentation/labels'].value
 
-			#in skimage + radius
-			regionCentroid = getCentroids(labels)
+			regionCentroid, regionRadii = getCentroids(labels)
 			cell_count += regionCentroid.shape[0]-1
 
+			print regionRadii, 'regionraddiiiiiii'
 			for child in root:
 				print child.tag, child.attrib
 
@@ -76,8 +114,9 @@ if __name__ == '__main__':
 					xpos = regionCentroid[i,0]
 					ypos = regionCentroid[i,1]
 					tpos = t
-					print xpos, ypos
-					spot = ET.SubElement(spotsInFrame, 'Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}" POSITION_Z="0" POSITION_Y="{}" RADIUS="4.028827888855088" FRAME="{}" POSITION_X="{}" QUALITY="3.0" '.format(str(ids[t][i]),str(float(tpos)),str(ypos),str(t),str(xpos)))
+					radius = np.mean(regionRadii[i])
+					print radius
+					spot = ET.SubElement(spotsInFrame, 'Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}" POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" POSITION_X="{}" QUALITY="3.0" '.format(str(ids[t][i]),str(float(tpos)),str(ypos),str(radius),str(t),str(xpos)))
 				
 			try:
 				move_table = h5raw['/tracking/Moves'].value
