@@ -3,7 +3,8 @@ import h5py
 import vigra
 import xml.etree.ElementTree as ET
 import glob
-#import lxml.etree as etree
+import optparse
+import configargparse as argparse
 
 def indent(elem, level=0):
     i = "\n" + level*"  "
@@ -28,16 +29,17 @@ def getCentroids(labelimage):
 	regionradii = centroid_feat['RegionRadii']
 	return regionCentroids, regionradii
 
-def getUniqueIds(timesteps):
+def getUniqueIds(images):
 	unique_ids = {}
 	uid = 0
 
-	for t in timesteps:
-		labelimage_filename = '/Users/jmassa/Documents/MaMut_project/mamut_bridge/events/0000{}.h5'.format(t)
+	for t,file_path in enumerate(images):
+		labelimage_filename = file_path
 		with h5py.File(labelimage_filename, 'r') as h5raw:
 			labelimage = h5raw['/segmentation/labels'].value
 			unique_ids[t] = {}
 			for ids in np.unique(labelimage):
+				print t , ids
 				unique_ids[t][ids] = uid
 				uid += 1
 	return unique_ids
@@ -64,24 +66,36 @@ def setFeatures(labelimage_filename):
 	with h5py.File(labelimage_filename, 'r') as h5raw:
 		labelimage = h5raw['/segmentation/labels'].value
 		features = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
-		print features.keys()
 
 		for key in features:
 			feature_string = key
 			feature_string = feature_string.replace('<', '_')
 			feature_string = feature_string.replace('>','')
 			feature_string = feature_string.replace(' ','')
-			if len(feature_string) > 10 :
-				shortname =  getShortname(feature_string)
+			if len(feature_string) > 15 :
+				shortname =  getShortname(feature_string).replace('_','')
 			else:
-				shortname = feature_string
-			newfeature = ET.SubElement(root[0][0][0], 'Feature feature="{}" name ="{}" shortname = "{}"'.format(feature_string, feature_string, shortname))
+				shortname = feature_string.replace('_','')
+			newfeature = ET.SubElement(root[0][0][0], 'Feature feature="{}" name ="{}"'.format(feature_string, feature_string)) # shortname add
 
 
 if __name__ == '__main__':
 
+	parser = optparse.OptionParser(description='Compute TRA loss of a new labeling compared to ground truth')
 
-	images = sorted(glob.glob("/Users/jmassa/Documents/MaMut_project/mamut_bridge/events/*.h5"))
+    # file paths
+	parser.add_option('--input-dir', type=str, dest='input_dir', default=".", 
+		help='Folder where the h5 event sequences are created')
+	parser.add_option('--input-xml', type=str, dest='input_xml', 
+		help='Filename for the xml image file')
+	parser.add_option('--xml-dir', type=str, dest='xml_dir', 
+		help='Filepath for the xml image file')
+
+	# parse command line
+	opt , args = parser.parse_args()
+
+
+	images = sorted(glob.glob(opt.input_dir +"/*.h5"))
 
 	tree = ET.parse('/Users/jmassa/Documents/MaMut_project/xml_ex/raw_input.xml')
 	root = tree.getroot()
@@ -91,7 +105,7 @@ if __name__ == '__main__':
 	cell_count = 0
 	track_id = 0
 	track_ref_dic = {}
-	ids = getUniqueIds(range(len(images)))
+	ids = getUniqueIds(images)
 	setFeatures(images[1])
 
 	for t,file_path in enumerate(images):
@@ -105,9 +119,6 @@ if __name__ == '__main__':
 			regionCentroid, regionRadii = getCentroids(labels)
 			cell_count += regionCentroid.shape[0]-1
 
-			print regionRadii, 'regionraddiiiiiii'
-			for child in root:
-				print child.tag, child.attrib
 
 			for i in np.unique(labels):
 				if i != 0 :
@@ -115,11 +126,11 @@ if __name__ == '__main__':
 					ypos = regionCentroid[i,1]
 					tpos = t
 					radius = np.mean(regionRadii[i])
-					print radius
 					spot = ET.SubElement(spotsInFrame, 'Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}" POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" POSITION_X="{}" QUALITY="3.0" '.format(str(ids[t][i]),str(float(tpos)),str(ypos),str(radius),str(t),str(xpos)))
 				
 			try:
 				move_table = h5raw['/tracking/Moves'].value
+				assert np.unique(move_table) == np.unique(labels), 'labels do not match'
 				for m in move_table:
 					if (t-1, m[0]) in track_ref_dic:
 						edge = ET.SubElement(track_ref_dic[t-1, m[0]], 'Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}" LINK_COST="0.0" VELOCITY="0.0" DISPLACEMENT="0.0"'.format(str(ids[t-1][m[0]]),str(ids[t][m[1]])))
@@ -135,17 +146,16 @@ if __name__ == '__main__':
 			except KeyError:
 				print "no tracking in the event sequence"
 
-
-
 	ET.dump(allspots)
 
-	
 	for allspots in root.iter('AllSpots'):
 		allspots.set('nspots', str(cell_count))
 
-
 	ET.dump(alltracks)
 	indent(root)
+
+	image_data = ET.SubElement(root[1], 'ImageData filename="{}" folder="{}" height ="0" nframes="0" nslices="0" pixelheight="1.0" pixelwidth="1.0" timeinterval="1.0" voxeldepth="1.0" width="0" '.format(opt.input_xml, opt.xml_dir))
+	ET.dump(image_data)
 
 
 	tree.write('output.xml')
