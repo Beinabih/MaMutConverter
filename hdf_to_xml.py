@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
 	images = sorted(glob.glob(opt.input_dir +"/*.h5"))
 
-	tree = ET.parse('/Users/jmassa/Documents/MaMut_project/xml_ex/raw_input.xml')
+	tree = ET.parse('raw_input.xml')
 	root = tree.getroot()
 	allspots = ET.SubElement(root[0], 'AllSpots')
 	alltracks = ET.SubElement(root[0], 'AllTracks')
