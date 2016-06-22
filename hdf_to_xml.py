@@ -28,7 +28,8 @@ def getCentroids(labelimage):
     centroid_feat = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
     regionCentroids = centroid_feat['RegionCenter']
     regionradii = centroid_feat['RegionRadii']
-    return regionCentroids, regionradii
+    regionSum = centroid_feat['Sum']
+    return regionCentroids, regionradii, regionSum
 
 def getUniqueIds(image_list):
     ''' unique ids for the cells'''
@@ -78,7 +79,7 @@ def setFeatures(labelimage_filename):
                 shortname =  getShortname(feature_string).replace('_', '')
             else:
                 shortname = feature_string.replace('_', '')
-            newfeature = ET.SubElement(root[0][0][0], 'Feature feature="{}" name ="{}"'.format(feature_string, feature_string)) # shortname add
+            newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string, feature_string, shortname)) # shortname add
             if isinstance(features[key], int):
                 newfeature.set('isint', 'true')
             else:
@@ -121,7 +122,7 @@ if __name__ == '__main__':
         with h5py.File(rawimage_filename, 'r') as h5raw:
             labels = h5raw['/segmentation/labels'].value
 
-            regionCentroid, regionRadii = getCentroids(labels)
+            regionCentroid, regionRadii, regionSum = getCentroids(labels)
             cell_count += regionCentroid.shape[0]-1
 
 
@@ -131,9 +132,10 @@ if __name__ == '__main__':
                     ypos = regionCentroid[i, 1]
                     tpos = t
                     radius = np.mean(regionRadii[i])
+                    cellSum = np.mean(regionSum[i])
                     spot = ET.SubElement(spotsInFrame, '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
-                                POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
-                                POSITION_X="{}" QUALITY="3.0" '''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(radius), str(t), str(xpos)))
+                                POSITION_Z="0" POSITION_Y="{}" RADIUS="0.0" Sum="{}" FRAME="{}" 
+                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(cellSum), str(t), str(xpos)))
 
             try:
                 move_table = h5raw['/tracking/Moves'].value
