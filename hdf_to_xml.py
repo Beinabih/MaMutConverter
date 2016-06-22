@@ -134,8 +134,8 @@ if __name__ == '__main__':
                     radius = np.mean(regionRadii[i])
                     cellSum = np.mean(regionSum[i])
                     spot = ET.SubElement(spotsInFrame, '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
-                                POSITION_Z="0" POSITION_Y="{}" RADIUS="0.0" Sum="{}" FRAME="{}" 
-                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(cellSum), str(t), str(xpos)))
+                                POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" Sum="{}" FRAME="{}" 
+                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(radius),str(cellSum), str(t), str(xpos)))
 
             try:
                 move_table = h5raw['/tracking/Moves'].value
