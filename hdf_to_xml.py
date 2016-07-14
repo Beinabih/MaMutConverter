@@ -23,13 +23,20 @@ def indent(elem, level=0):
             elem.tail = j
     return elem
 
+def convertKeyName(key):
+    key = key.replace('<', '_')
+    key = key.replace('>', '')
+    key = key.replace(' ', '')
+    return key
+
+
 def getCentroids(labelimage):
     '''get centroids and radius of a cell'''
-    centroid_feat = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
-    regionCentroids = centroid_feat['RegionCenter']
-    regionradii = centroid_feat['RegionRadii']
-    regionSum = centroid_feat['Sum']
-    return regionCentroids, regionradii, regionSum
+    features = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
+    regionCentroids = features['RegionCenter']
+    regionradii = features['RegionRadii']
+    #regionSum = features['Sum']
+    return regionCentroids, regionradii, features
 
 def getUniqueIds(image_list):
     ''' unique ids for the cells'''
@@ -72,14 +79,21 @@ def setFeatures(labelimage_filename):
 
         for key in features:
             feature_string = key
-            feature_string = feature_string.replace('<', '_')
-            feature_string = feature_string.replace('>', '')
-            feature_string = feature_string.replace(' ', '')
+            feature_string = convertKeyName(feature_string)
             if len(feature_string) > 15:
                 shortname =  getShortname(feature_string).replace('_', '')
             else:
                 shortname = feature_string.replace('_', '')
-            newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string, feature_string, shortname)) # shortname add
+
+            if (np.array(features[key])).ndim == 2:
+                newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_x',
+                                                                                                                                  feature_string, shortname + '_x'))
+                newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_y',
+                                                                                                                                  feature_string, shortname + '_y'))
+            else:
+                newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string,
+                                                                                                                                  feature_string, shortname))
+
             if isinstance(features[key], int):
                 newfeature.set('isint', 'true')
             else:
@@ -122,9 +136,8 @@ if __name__ == '__main__':
         with h5py.File(rawimage_filename, 'r') as h5raw:
             labels = h5raw['/segmentation/labels'].value
 
-            regionCentroid, regionRadii, regionSum = getCentroids(labels)
+            regionCentroid, regionRadii, features = getCentroids(labels)
             cell_count += regionCentroid.shape[0]-1
-
 
             for i in np.unique(labels):
                 if i != 0:
@@ -132,10 +145,23 @@ if __name__ == '__main__':
                     ypos = regionCentroid[i, 1]
                     tpos = t
                     radius = np.mean(regionRadii[i])
-                    cellSum = np.mean(regionSum[i])
+                    #cellSum = np.mean(regionSum[i])
                     spot = ET.SubElement(spotsInFrame, '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
-                                POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" Sum="{}" FRAME="{}" 
-                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(radius),str(cellSum), str(t), str(xpos)))
+                                POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
+                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(radius),
+                                                                        str(t), str(xpos)))
+
+                    for keys in features:
+                        # print np.array(features[keys]).ndim
+                        # print features[keys]
+                        if (np.array(features[keys])).ndim == 0:
+                            spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
+                        if (np.array(features[keys])).ndim == 1:
+                            spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
+                        if (np.array(features[keys])).ndim == 2:
+                            spot.set(convertKeyName(keys) + '_x', str(np.nan_to_num(features[keys][i, 0])))
+                            spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
+
 
             try:
                 move_table = h5raw['/tracking/Moves'].value
