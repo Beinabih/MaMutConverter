@@ -86,10 +86,12 @@ def setFeatures(labelimage_filename):
                 shortname = feature_string.replace('_', '')
 
             if (np.array(features[key])).ndim == 2:
-                newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_x',
-                                                                                                                                  feature_string, shortname + '_x'))
-                newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_y',
-                                                                                                                                  feature_string, shortname + '_y'))
+                if key != 'Histogram':
+                    for column in xrange((np.array(features[key])).shape[1]):
+                        newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_' + str(column),
+                                                                                                                                          feature_string, shortname + '_' + str(column)))
+                        # newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_y',
+                        #                                                                                                                   feature_string, shortname + '_y'))
             else:
                 newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string,
                                                                                                                                   feature_string, shortname))
@@ -110,12 +112,14 @@ if __name__ == '__main__':
                       help='Filename for the xml image file')
     parser.add_option('--xml-dir', type=str, dest='xml_dir',
                       help='Filepath for the xml image file')
+    parser.add_option('--output-dir', type=str, dest='output_dir', default=".",
+                      help='Filepath for the xml image file')
 
     # parse command line
     opt, args = parser.parse_args()
 
 
-    images = sorted(glob.glob(opt.input_dir +"/*.h5"))
+    images = sorted(glob.glob(opt.input_dir + "/*.h5"))
 
     tree = ET.parse('raw_input.xml')
     root = tree.getroot()
@@ -144,7 +148,7 @@ if __name__ == '__main__':
                     xpos = regionCentroid[i, 0]
                     ypos = regionCentroid[i, 1]
                     tpos = t
-                    radius = np.mean(regionRadii[i])
+                    radius = 2*regionRadii[i, 0]
                     #cellSum = np.mean(regionSum[i])
                     spot = ET.SubElement(spotsInFrame, '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
                                 POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
@@ -159,8 +163,9 @@ if __name__ == '__main__':
                         if (np.array(features[keys])).ndim == 1:
                             spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
                         if (np.array(features[keys])).ndim == 2:
-                            spot.set(convertKeyName(keys) + '_x', str(np.nan_to_num(features[keys][i, 0])))
-                            spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
+                            for j in xrange((np.array(features[keys])).shape[1]):
+                                spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
+                                #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
 
 
             try:
@@ -195,7 +200,7 @@ if __name__ == '__main__':
     ET.dump(image_data)
 
 
-    tree.write('output.xml')
+    tree.write(opt.output_dir + '/output.xml')
 
 
 
