@@ -86,12 +86,11 @@ def setFeatures(labelimage_filename):
                 shortname = feature_string.replace('_', '')
 
             if (np.array(features[key])).ndim == 2:
-                if key != 'Histogram':
+                #if key != 'Histogram':
                     for column in xrange((np.array(features[key])).shape[1]):
                         newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_' + str(column),
                                                                                                                                           feature_string, shortname + '_' + str(column)))
-                        # newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_y',
-                        #                                                                                                                   feature_string, shortname + '_y'))
+
             else:
                 newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string,
                                                                                                                                   feature_string, shortname))
