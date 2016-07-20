@@ -7,44 +7,47 @@ import csv
 
 
 def getTrackDict(root):
+    ''' get the Track ID for every object '''
     track_ids_ = {}
     for track in root[0][2]:
-        print track.attrib
         for edge in track:
-            print edge.attrib.values()[3]
-            track_ids_[int(edge.attrib.values()[3])] = track.attrib.values()[1]
+            track_ids_[int(edge.attrib.get('SPOT_TARGET_ID'))] = int(track.attrib.get('TRACK_ID'))
 
     for frame in root[0][1]:
         for spot in frame:
-            if int(spot.attrib.values()[3]) not in track_ids_.keys():
-                track_ids_[int(spot.attrib.values()[3])] = 'None'
+            if int(spot.attrib.get('ID')) not in track_ids_.keys():
+                track_ids_[int(spot.attrib.get('ID'))] = 'None'
 
     return track_ids_
 
 
 if __name__ == '__main__':
 
-    tree = ET.parse('output.xml')
+    parser = optparse.OptionParser(description='hdf to xml')
+
+    parser.add_option('--input-xml', type=str, dest='input_xml',
+                      help='Filename for the xml file')
+    parser.add_option('--output-dir', type=str, dest='output_dir', default=".",
+                      help='Filepath for the csv table file')
+
+    # parse command line
+    opt, args = parser.parse_args()
+
+    tree = ET.parse(opt.input_xml)
     root = tree.getroot()
 
-    print root[0][2].tag, int(root[0][1].attrib.values()[0])
-
-
-
-    with open('blank.cvs', 'w') as featureTable:
-        tablewriter = csv.writer(featureTable)
-        tablewriter.writerow(['trackID', 'time', 'objID', 'xpos', 'ypos', 'Radius', 'Brightness'])
+    with open(opt.output_dir + '/mamut_table.csv', 'w') as featureTable:
+        tablewriter = csv.writer(featureTable, delimiter=',')
+        #tablewriter.writerow(['trackID', 'time', 'objID', 'xpos', 'ypos', 'Radius', 'Brightness'])
+        tablewriter.writerow(['trackID'] + root[0][1][1][1].keys())
 
         track_ids = getTrackDict(root)
 
         for frame in root[0][1]:
-            # print frame.tag
             for spot in frame:
-                # print spot.attrib
-                print spot.attrib.values()[3]
-                tablewriter.writerow([track_ids[int(spot.attrib.values()[3])], spot.attrib.values()[8], spot.attrib.values()[3],
-                                      spot.attrib.values()[5], spot.attrib.values()[6], spot.attrib.values()[7],
-                                      spot.attrib.values()[1]])
+                print [track_ids[int(spot.attrib.get('ID'))]] + spot.attrib.values()
+                row = [track_ids[int(spot.attrib.get('ID'))]] + spot.attrib.values()
+                tablewriter.writerow(row)
 
 
     featureTable.close()
