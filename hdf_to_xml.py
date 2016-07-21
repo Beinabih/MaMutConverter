@@ -86,7 +86,7 @@ def setFeatures(labelimage_filename):
                 shortname = feature_string.replace('_', '')
 
             if (np.array(features[key])).ndim == 2:
-                #if key != 'Histogram':
+                if key != 'Histogram':
                     for column in xrange((np.array(features[key])).shape[1]):
                         newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_' + str(column),
                                                                                                                                           feature_string, shortname + '_' + str(column)))
@@ -102,7 +102,7 @@ def setFeatures(labelimage_filename):
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser(description='Compute TRA loss of a new labeling compared to ground truth')
+    parser = optparse.OptionParser(description='hdf to xml')
 
     # file paths
     parser.add_option('--input-dir', type=str, dest='input_dir', default=".",
@@ -155,18 +155,19 @@ if __name__ == '__main__':
                                                                         str(t), str(xpos)))
 
                     for keys in features:
-                        # print np.array(features[keys]).ndim
-                        # print features[keys]
-                        if (np.array(features[keys])).ndim == 0:
-                            spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
-                        if (np.array(features[keys])).ndim == 1:
-                            spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
-                        if (np.array(features[keys])).ndim == 2:
-                            for j in xrange((np.array(features[keys])).shape[1]):
-                                spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
-                                #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
+                        if keys != 'Histogram':
+                            # print np.array(features[keys]).ndim
+                            # print features[keys]
+                            if (np.array(features[keys])).ndim == 0:
+                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
+                            if (np.array(features[keys])).ndim == 1:
+                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
+                            if (np.array(features[keys])).ndim == 2:
+                                for j in xrange((np.array(features[keys])).shape[1]):
+                                    spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
+                                    #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
 
-
+            # write tracking in file
             try:
                 move_table = h5raw['/tracking/Moves'].value
                 for m in move_table:
@@ -185,6 +186,32 @@ if __name__ == '__main__':
                                 LINK_COST="0.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][m[0]]), str(ids[t][m[1]])))
             except KeyError:
                 print "no tracking in the event sequence"
+
+            # write splits in file
+            try:
+                split_table = h5raw['/tracking/Splits'].value
+                for s in split_table:
+                    if (t-1, s[0]) in track_ref_dic:
+                        edge_one = ET.SubElement(track_ref_dic[t-1, s[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
+                                LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[1]])))
+                        edge_two = ET.SubElement(track_ref_dic[t-1, s[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
+                                LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[2]])))
+                        track_ref_dic[t, s[1]] = track_ref_dic[t-1, s[0]]
+                        track_ref_dic[t, s[2]] = track_ref_dic[t-1, s[0]]
+                    else:
+                        track_ref_dic[t, s[1]] = ET.SubElement(alltracks, 'Track')
+                        track_ref_dic[t, s[1]].set('TRACK_ID', str(track_id))
+                        track_ref_dic[t, s[1]].set("name", 'Track_{}'.format(str(track_id)))
+                        track_ref_dic[t, s[1]].set("TRACK_INDEX", str(track_id))
+                        trackid = ET.SubElement(filteredTracks, 'TrackID TRACK_ID="{}"'.format(str(track_id)))
+                        track_id += 1
+                        edge_one = ET.SubElement(track_ref_dic[t, s[1]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
+                                LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[1]])))
+                        edge_two = ET.SubElement(track_ref_dic[t, s[2]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
+                                LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[2]])))
+            except KeyError:
+                print "no tracking in the event sequence"
+
 
     ET.dump(allspots)
 
