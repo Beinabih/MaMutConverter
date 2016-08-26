@@ -4,6 +4,8 @@ import glob
 import optparse
 import numpy as np
 import h5py
+from skimage.external import tifffile
+
 
 def indent(elem, level=0):
     '''line indentation in the xml file '''
@@ -30,9 +32,11 @@ def convertKeyName(key):
     return key
 
 
-def getCentroids(labelimage):
+def getFeatures(rawimage, labelimage):
     '''get centroids and radius of a cell'''
-    features = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
+    if labelimage.ndim == 3:
+        labelimage = np.squeeze(labelimage)
+    features = vigra.analysis.extractRegionFeatures(np.float32(rawimage), np.uint32(labelimage))
     regionCentroids = features['RegionCenter']
     regionradii = features['RegionRadii']
     #regionSum = features['Sum']
@@ -71,11 +75,15 @@ def getShortname(string):
             break
     return shortname.strip()
 
-def setFeatures(labelimage_filename):
+def setFeatures(rawimage, labelimage_filename):
     ''' set features in the xml '''
     with h5py.File(labelimage_filename, 'r') as h5raw:
         labelimage = h5raw['/segmentation/labels'].value
-        features = vigra.analysis.extractRegionFeatures(np.float32(labelimage), np.uint32(labelimage))
+        labelimage = np.swapaxes(labelimage, 0, 1)
+        print rawimage.shape, labelimage.shape
+        if labelimage.ndim == 3:
+            labelimage = np.squeeze(labelimage)
+        features = vigra.analysis.extractRegionFeatures(rawimage, np.uint32(labelimage))
 
         for key in features:
             feature_string = key
@@ -87,11 +95,13 @@ def setFeatures(labelimage_filename):
 
             if (np.array(features[key])).ndim == 2:
                 if key != 'Histogram':
+                    print key, np.array(features[key]).shape
                     for column in xrange((np.array(features[key])).shape[1]):
                         newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_' + str(column),
                                                                                                                                           feature_string, shortname + '_' + str(column)))
 
             else:
+                print "ELSE", key, np.array(features[key]).shape
                 newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string,
                                                                                                                                   feature_string, shortname))
 
@@ -107,6 +117,8 @@ if __name__ == '__main__':
     # file paths
     parser.add_option('--input-dir', type=str, dest='input_dir', default=".",
                       help='Folder where the h5 event sequences are created')
+    parser.add_option('--input-raw', type=str, dest='input_raw', default=".",
+                      help='the raw input image')
     parser.add_option('--input-xml', type=str, dest='input_xml',
                       help='Filename for the xml image file')
     parser.add_option('--xml-dir', type=str, dest='xml_dir',
@@ -129,7 +141,15 @@ if __name__ == '__main__':
     track_id = 0
     track_ref_dic = {}
     ids = getUniqueIds(images)
-    setFeatures(images[1])
+    #raw_images = np.float32(tifffile.imread(opt.input_raw))
+    with h5py.File(opt.input_raw, 'r') as h5raw:
+        raw_images = np.float32(h5raw['/data'].value)
+    print raw_images.shape
+    if raw_images.ndim == 4:
+        raw_images = np.rollaxis(raw_images, 1, 4)
+    setFeatures(raw_images[0], images[1])
+
+
 
     for t, file_path in enumerate(images):
         rawimage_filename = file_path
@@ -138,8 +158,9 @@ if __name__ == '__main__':
 
         with h5py.File(rawimage_filename, 'r') as h5raw:
             labels = h5raw['/segmentation/labels'].value
+            labels=  np.swapaxes(labels, 0, 1)
 
-            regionCentroid, regionRadii, features = getCentroids(labels)
+            regionCentroid, regionRadii, features = getFeatures(raw_images[t], labels)
             cell_count += regionCentroid.shape[0]-1
 
             for i in np.unique(labels):
