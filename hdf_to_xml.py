@@ -32,10 +32,12 @@ def convertKeyName(key):
     return key
 
 
-def getFeatures(rawimage, labelimage):
+def getFeatures(rawimage, labelimage, is_3D):
     '''get centroids and radius of a cell'''
-    if labelimage.ndim == 3:
+    if is_3D == 0 and labelimage.ndim == 3:
         labelimage = np.squeeze(labelimage)
+    rawimage = np.squeeze(rawimage)
+    print "getFeatures", rawimage.shape, labelimage.shape
     features = vigra.analysis.extractRegionFeatures(np.float32(rawimage), np.uint32(labelimage))
     regionCentroids = features['RegionCenter']
     regionradii = features['RegionRadii']
@@ -75,33 +77,39 @@ def getShortname(string):
             break
     return shortname.strip()
 
-def setFeatures(rawimage, labelimage_filename):
+def setFeatures(rawimage, labelimage_filename, is_3D, axes_order_label):
     ''' set features in the xml '''
     with h5py.File(labelimage_filename, 'r') as h5raw:
         labelimage = h5raw['/segmentation/labels'].value
-        labelimage = np.swapaxes(labelimage, 0, 1)
-        print rawimage.shape, labelimage.shape
-        if labelimage.ndim == 3:
+        labelimage = checkAxes(labelimage, is_3D, axes_order_label, False)
+        #if changed
+        #labelimage = np.swapaxes(labelimage, 0, 1)
+
+        rawimage = np.squeeze(rawimage)
+        print 'setFeatures', rawimage.shape, labelimage.shape
+
+        if is_3D == 0 and labelimage.ndim == 3:
             labelimage = np.squeeze(labelimage)
+
         features = vigra.analysis.extractRegionFeatures(rawimage, np.uint32(labelimage))
 
         for key in features:
             feature_string = key
             feature_string = convertKeyName(feature_string)
             if len(feature_string) > 15:
-                shortname =  getShortname(feature_string).replace('_', '')
+                shortname = getShortname(feature_string).replace('_', '')
             else:
                 shortname = feature_string.replace('_', '')
 
             if (np.array(features[key])).ndim == 2:
                 if key != 'Histogram':
-                    print key, np.array(features[key]).shape
+                    #print key, np.array(features[key]).shape
                     for column in xrange((np.array(features[key])).shape[1]):
                         newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string + '_' + str(column),
                                                                                                                                           feature_string, shortname + '_' + str(column)))
 
             else:
-                print "ELSE", key, np.array(features[key]).shape
+                #print "ELSE", key, np.array(features[key]).shape
                 newfeature = ET.SubElement(root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(feature_string,
                                                                                                                                   feature_string, shortname))
 
@@ -109,6 +117,49 @@ def setFeatures(rawimage, labelimage_filename):
                 newfeature.set('isint', 'true')
             else:
                 newfeature.set('isint', 'false')
+
+def changeAxesOrder(volume, input_axes, output_axes='txyzc'):
+    outVolume = volume
+
+    # find present and missing axes
+    positions = {}
+    missingAxes = []
+    for axis in output_axes:
+        try:
+            positions[axis] = input_axes.index(axis)
+        except ValueError:
+            missingAxes.append(axis)
+
+    # insert missing axes at the end
+    for m in missingAxes:
+        outVolume = np.expand_dims(outVolume, axis=-1)
+        positions[m] = outVolume.ndim - 1
+
+    # transpose
+    axesRemapping = [positions[a] for a in output_axes]
+    outVolume = np.transpose(outVolume, axes=axesRemapping)
+
+    return outVolume
+
+def checkAxes(volume, is_3D, axes_order, raw):
+
+    if raw:
+        if is_3D == 1:
+            if axes_order != "txyzc":
+                volume = changeAxesOrder(volume, axes_order, output_axes='txyzc')
+        else:
+            if axes_order != "txyc":
+                volume = changeAxesOrder(volume, axes_order, output_axes='txyc')
+    else:
+        if is_3D == 1:
+            if axes_order != "xyzc":
+                volume = changeAxesOrder(volume, axes_order, output_axes='xyzc')
+        else:
+            if axes_order != "xyc":
+                volume = changeAxesOrder(volume, axes_order, output_axes='xyc')
+
+    return volume
+
 
 if __name__ == '__main__':
 
@@ -119,16 +170,23 @@ if __name__ == '__main__':
                       help='Folder where the h5 event sequences are created')
     parser.add_option('--input-raw', type=str, dest='input_raw', default=".",
                       help='the raw input image')
+    parser.add_option('--raw-filepath', type=str, dest='raw_filepath', default="data",
+                      help='hdf5 Filepath of the raw_input')
     parser.add_option('--input-xml', type=str, dest='input_xml',
                       help='Filename for the xml image file')
     parser.add_option('--xml-dir', type=str, dest='xml_dir',
                       help='Filepath for the xml image file')
     parser.add_option('--output-dir', type=str, dest='output_dir', default=".",
                       help='Filepath for the xml image file')
+    parser.add_option('--is-3D', type=int, dest='is_3D', default=0,
+                      help='if file is 3D')
+    parser.add_option('--axes-order-raw', type=str, dest='axes_order_raw', default="txyzc",
+                      help='the axes order of the raw file')
+    parser.add_option('--axes-order-label', type=str, dest='axes_order_label', default="xyzc",
+                      help='the axes order of the labelfile')
 
     # parse command line
     opt, args = parser.parse_args()
-
 
     images = sorted(glob.glob(opt.input_dir + "/*.h5"))
 
@@ -142,14 +200,17 @@ if __name__ == '__main__':
     track_ref_dic = {}
     ids = getUniqueIds(images)
     #raw_images = np.float32(tifffile.imread(opt.input_raw))
+
     with h5py.File(opt.input_raw, 'r') as h5raw:
-        raw_images = np.float32(h5raw['/data'].value)
+        raw_images = np.float32(h5raw[opt.raw_filepath].value)
     print raw_images.shape
-    if raw_images.ndim == 4:
-        raw_images = np.rollaxis(raw_images, 1, 4)
-    setFeatures(raw_images[0], images[1])
 
+    raw_images = checkAxes(raw_images, opt.is_3D, opt.axes_order_raw, True)
+    # for tcxy order
+    # if raw_images.ndim == 4:
+    #     raw_images = np.rollaxis(raw_images, 1, 4)
 
+    setFeatures(raw_images[0], images[1], opt.is_3D, opt.axes_order_label)
 
     for t, file_path in enumerate(images):
         rawimage_filename = file_path
@@ -157,22 +218,31 @@ if __name__ == '__main__':
         spotsInFrame.set('frame', str(t))
 
         with h5py.File(rawimage_filename, 'r') as h5raw:
-            labels = h5raw['/segmentation/labels'].value
-            labels=  np.swapaxes(labels, 0, 1)
 
-            regionCentroid, regionRadii, features = getFeatures(raw_images[t], labels)
+            labels = h5raw['/segmentation/labels'].value
+            labels = checkAxes(labels, opt.is_3D, opt.axes_order_label, False)
+            # labels = np.swapaxes(labels, 0, 1)
+            print raw_images.shape, labels.shape
+
+            regionCentroid, regionRadii, features = getFeatures(raw_images[t], labels, opt.is_3D)
             cell_count += regionCentroid.shape[0]-1
 
             for i in np.unique(labels):
                 if i != 0:
                     xpos = regionCentroid[i, 0]
                     ypos = regionCentroid[i, 1]
+
+                    if opt.is_3D == 1:
+                        zpos = regionCentroid[i, 2]
+                    else:
+                        zpos = 0
+
                     tpos = t
                     radius = 2*regionRadii[i, 0]
                     #cellSum = np.mean(regionSum[i])
                     spot = ET.SubElement(spotsInFrame, '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
-                                POSITION_Z="0" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
-                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(ypos), str(radius),
+                                POSITION_Z="{}" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
+                                POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(zpos), str(ypos), str(radius),
                                                                         str(t), str(xpos)))
 
                     for keys in features:
@@ -242,6 +312,7 @@ if __name__ == '__main__':
     ET.dump(alltracks)
     indent(root)
 
+    #'height= 'instead of 'height =' gives a wrong picture position
     image_data = ET.SubElement(root[1], '''ImageData filename="{}" folder="{}" height ="0" nframes="0" nslices="0"
                     pixelheight="1.0" pixelwidth="1.0" timeinterval="1.0" voxeldepth="1.0" width="0" '''.format(opt.input_xml, opt.xml_dir))
     ET.dump(image_data)
