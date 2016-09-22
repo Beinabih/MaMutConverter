@@ -18,6 +18,10 @@ def getTrackDict(root):
             track_ids_[IDkey] = int(track.attrib.get('TRACK_ID'))
             spotIDs.pop(IDkey, None)
 
+            IDkey = int(edge.attrib.get('SPOT_TARGET_ID'))
+            track_ids_[IDkey] = int(track.attrib.get('TRACK_ID'))
+            spotIDs.pop(IDkey, None)
+
     for IDkey in spotIDs.keys():
         track_ids_[IDkey] = 'None'
 

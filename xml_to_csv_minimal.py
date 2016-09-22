@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import optparse
 import csv
 
-attributeKeys = ['FRAME', 'name',\
+attributeKeys = ['ID', 'FRAME', 'name',\
                  'POSITION_X', 'POSITION_Y', 'RADIUS',\
                  'Coord_Minimum_0', 'Coord_Minimum_1',\
                  'Coord_Maximum_0', 'Coord_Maximum_1',\
@@ -27,6 +27,10 @@ def getTrackDict(root):
     for track in root[0][2]:   
         for edge in track:
             IDkey = int(edge.attrib.get('SPOT_SOURCE_ID'))
+            track_ids_[IDkey] = int(track.attrib.get('TRACK_ID'))
+            spotIDs.pop(IDkey, None)
+
+            IDkey = int(edge.attrib.get('SPOT_TARGET_ID'))
             track_ids_[IDkey] = int(track.attrib.get('TRACK_ID'))
             spotIDs.pop(IDkey, None)
 
