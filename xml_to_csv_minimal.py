@@ -13,7 +13,7 @@ attributes = ['trackID'] + attributeKeys
 
 nColRange = [87, 88, 89]
 
-minAttributes = 5
+minAttributes = 6
 
 def getTrackDict(root):
     """ get the Track ID for every object """
