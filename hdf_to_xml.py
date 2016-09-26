@@ -249,18 +249,18 @@ if __name__ == '__main__':
                                 POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(zpos), str(ypos), str(radius),
                                                                         str(t), str(xpos)))
 
-                    # for keys in features:
-                    #     if keys != 'Histogram':
-                    #         # print np.array(features[keys]).ndim
-                    #         # print features[keys]
-                    #         if (np.array(features[keys])).ndim == 0:
-                    #             spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
-                    #         if (np.array(features[keys])).ndim == 1:
-                    #             spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
-                    #         if (np.array(features[keys])).ndim == 2:
-                    #             for j in xrange((np.array(features[keys])).shape[1]):
-                    #                 spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
-                    #                 #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
+                    for keys in features:
+                        if keys != 'Histogram':
+                            # print np.array(features[keys]).ndim
+                            # print features[keys]
+                            if (np.array(features[keys])).ndim == 0:
+                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
+                            if (np.array(features[keys])).ndim == 1:
+                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
+                            if (np.array(features[keys])).ndim == 2:
+                                for j in xrange((np.array(features[keys])).shape[1]):
+                                    spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
+                                    #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
 
 
             # write splits in file
