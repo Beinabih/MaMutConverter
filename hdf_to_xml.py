@@ -170,8 +170,8 @@ if __name__ == '__main__':
                       help='Folder where the h5 event sequences are created')
     parser.add_option('--input-raw', type=str, dest='input_raw', default=".",
                       help='the raw input image')
-    # parser.add_option('--raw-filepath', type=str, dest='raw_filepath', default="data",
-    #                   help='hdf5 Filepath of the raw_input')
+    parser.add_option('--raw-filepath', type=str, dest='raw_filepath', default="data",
+                      help='hdf5 Filepath of the raw_input')
     parser.add_option('--input-xml', type=str, dest='input_xml',
                       help='Filename for the xml image file')
     parser.add_option('--xml-dir', type=str, dest='xml_dir',
@@ -199,15 +199,15 @@ if __name__ == '__main__':
     track_id = 0
     track_ref_dic = {}
     ids = getUniqueIds(images)
-    #raw_images = np.float32(tifffile.imread(opt.input_raw))
-
-    with h5py.File(opt.input_raw, 'r') as h5raw:
-        print "group name --->", str(h5raw.items()[0][0])
-        raw_images = np.array(h5raw.get(str(h5raw.items()[0][0]))) # assumes the data is in the top level  group 
+    # raw_images = np.float32(tifffile.imread(opt.input_raw))
 
     # with h5py.File(opt.input_raw, 'r') as h5raw:
-    #     raw_images = np.float32(h5raw[opt.raw_filepath].value)
-    # print raw_images.shape
+    #     print "group name --->", str(h5raw.items()[0][0])
+    #     raw_images = np.array(h5raw.get(str(h5raw.items()[0][0]))) # assumes the data is in the top level  group 
+
+    with h5py.File(opt.input_raw, 'r') as h5raw:
+        raw_images = np.float32(h5raw[opt.raw_filepath].value)
+    print raw_images.shape
 
     raw_images = checkAxes(raw_images, opt.is_3D, opt.axes_order_raw, True)
     # for tcxy order
@@ -217,6 +217,7 @@ if __name__ == '__main__':
     setFeatures(raw_images[0], images[1], opt.is_3D, opt.axes_order_label)
 
     for t, file_path in enumerate(images):
+        print "timestep: ", t
         rawimage_filename = file_path
         spotsInFrame = ET.SubElement(allspots, 'SpotsInFrame')
         spotsInFrame.set('frame', str(t))
@@ -249,25 +250,26 @@ if __name__ == '__main__':
                                 POSITION_X="{}" QUALITY="3.0"'''.format(str(ids[t][i]), str(float(tpos)), str(zpos), str(ypos), str(radius),
                                                                         str(t), str(xpos)))
 
-                    for keys in features:
-                        if keys != 'Histogram':
-                            # print np.array(features[keys]).ndim
-                            # print features[keys]
-                            if (np.array(features[keys])).ndim == 0:
-                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
-                            if (np.array(features[keys])).ndim == 1:
-                                spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
-                            if (np.array(features[keys])).ndim == 2:
-                                for j in xrange((np.array(features[keys])).shape[1]):
-                                    spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
+                    # for keys in features:
+                    #     if keys != 'Histogram':
+                    #         # print np.array(features[keys]).ndim
+                    #         # print features[keys]
+                    #         if (np.array(features[keys])).ndim == 0:
+                    #             spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys])))
+                    #         if (np.array(features[keys])).ndim == 1:
+                    #             spot.set(convertKeyName(keys), str(np.nan_to_num(features[keys][i])))
+                    #         if (np.array(features[keys])).ndim == 2:
+                    #             for j in xrange((np.array(features[keys])).shape[1]):
+                    #                 spot.set(convertKeyName(keys) + '_{}'.format(str(j)), str(np.nan_to_num(features[keys][i, j])))
                                     #spot.set(convertKeyName(keys) + '_y', str(np.nan_to_num(features[keys][i, 1])))
-
 
             # write splits in file
             try:
                 split_table = h5raw['/tracking/Splits'].value
                 for s in split_table:
+                    print 'split_table', s
                     if (t-1, s[0]) in track_ref_dic:
+                        print 'split if', s[1], s[2]
                         edge_one = ET.SubElement(track_ref_dic[t-1, s[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
                                 LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[1]])))
                         edge_two = ET.SubElement(track_ref_dic[t-1, s[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
@@ -275,6 +277,7 @@ if __name__ == '__main__':
                         track_ref_dic[t, s[1]] = track_ref_dic[t-1, s[0]]
                         track_ref_dic[t, s[2]] = track_ref_dic[t-1, s[0]]
                     else:
+                        print 'split else', s[1], s[2]
                         track_ref_dic[t, s[1]] = ET.SubElement(alltracks, 'Track')
                         track_ref_dic[t, s[1]].set('TRACK_ID', str(track_id))
                         track_ref_dic[t, s[1]].set("name", 'Track_{}'.format(str(track_id)))
@@ -283,9 +286,9 @@ if __name__ == '__main__':
                         track_id += 1
                         edge_one = ET.SubElement(track_ref_dic[t, s[1]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
                                 LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[1]])))
-                        edge_two = ET.SubElement(track_ref_dic[t, s[2]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
+                        edge_two = ET.SubElement(track_ref_dic[t, s[1]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
                                 LINK_COST="-1.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][s[0]]), str(ids[t][s[2]])))
-                    has_table = True
+                has_table = True
             except KeyError:
                 print "no split in the sequence"
                 has_table = False
@@ -294,7 +297,8 @@ if __name__ == '__main__':
                 move_table = h5raw['/tracking/Moves'].value
                 for m in move_table:
                     if has_table:
-                        if (t-1, m[0]) not in split_table:
+
+                        if m[0] not in split_table[:, 0]:
 
                             if (t-1, m[0]) in track_ref_dic:
                                 edge = ET.SubElement(track_ref_dic[t-1, m[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
@@ -310,6 +314,9 @@ if __name__ == '__main__':
                                 track_id += 1
                                 edge = ET.SubElement(track_ref_dic[t, m[1]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
                                         LINK_COST="0.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][m[0]]), str(ids[t][m[1]])))
+                        else:
+                            print "same ID", m[0], split_table
+                            continue
 
                     else:
 
