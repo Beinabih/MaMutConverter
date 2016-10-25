@@ -253,16 +253,12 @@ if __name__ == '__main__':
                 for m in move_table:
                     if not (has_table and m[0] in split_table[:, 0]):
                         if (t-1, m[0]) in track_ref_dic:
-                            # edge = ET.SubElement(track_ref_dic[t-1, m[0]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
-                            #         LINK_COST="0.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][m[0]]), str(ids[t][m[1]])))
-                            track_ref_dic[t, m[1]] = track_ref_dic[t-1, m[0]]
                             track_id = track_ref_dic[t, m[1]]
                         else:
                             track_id = next_track_id
                             next_track_id += 1
-                            # edge = ET.SubElement(track_ref_dic[t, m[1]], '''Edge SPOT_SOURCE_ID="{}" SPOT_TARGET_ID="{}"
-                            #         LINK_COST="0.0" VELOCITY="0.0" DISPLACEMENT="0.0"'''.format(str(ids[t-1][m[0]]), str(ids[t][m[1]])))
                         builder.addLink(track_id, ids[t-1][m[0]], ids[t][m[1]])
+                        track_ref_dic[t, m[1]] = track_id
             except KeyError:
                 print "no tracking in the event sequence"
 
