@@ -18,6 +18,7 @@ class MamutXmlBuilder(object):
 
     def addFeatureName(self, featureName, featureDisplayName, shortName, isInt):
         '''
+        Defines the used features at the beginning of the XML file.
         '''
         newfeature = ET.SubElement(self.root[0][0][0], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(featureName, featureDisplayName, shortName))
         if isInt:
@@ -27,6 +28,7 @@ class MamutXmlBuilder(object):
 
     def addSpot(self, timeframe, uuid, xpos, ypos, zpos, radius=1.0, featureDict=None):
         '''
+        Adds spots and their features in the XML file
         '''
         if timeframe not in self.spotsPerFrame:
             spotsInFrame = ET.SubElement(self.allspots, 'SpotsInFrame')
@@ -49,6 +51,7 @@ class MamutXmlBuilder(object):
 
     def getOrCreateTrackElement(self, trackId):
         '''
+        Decides if a new track starts or an old one will be continoued
         '''
         if trackId not in self.trackElementById:
             track = ET.SubElement(self.alltracks, 'Track')
@@ -63,6 +66,7 @@ class MamutXmlBuilder(object):
 
     def addSplit(self, trackId, parentId, childrenIds):
         '''
+        writes splits from the split table in the XML tracking section
         '''
         trackElement = self.getOrCreateTrackElement(trackId)
 
@@ -74,6 +78,7 @@ class MamutXmlBuilder(object):
 
     def addLink(self, trackId, sourceId, targetId):
         '''
+        writes moves from the move table in the XML tracking section
         '''
         trackElement = self.getOrCreateTrackElement(trackId)
 
@@ -94,6 +99,7 @@ class MamutXmlBuilder(object):
 
     def writeToFile(self, filename):
         '''
+        saves the XML 
         '''
         for allspots in self.root.iter('AllSpots'):
             allspots.set('nspots', str(self.cell_count))
