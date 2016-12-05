@@ -42,3 +42,9 @@ Usage:
 	A file called 'output.xml' will be saved to the <--output-dir Path>
 
 3. Open the output.xml with the MaMuT-plugin (MaMuT -- load MaMuT File)
+
+	1. When opening 2D Images in the MaMuT-Viewer: 
+	```
+		Dont forget to scroll in z until its on 0 (Hotkey-information by clicking 'help')
+		Go to Settings and change the Brightness & Color 
+	```
