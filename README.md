@@ -23,18 +23,18 @@ Usage:
 	``` 
 
 	parameters:
-	--input-dir: path to the event sequence folder 
-	--input-raw: filepath to the HDF5 raw file 
-	--raw-filepath: filepath in the HDF5 raw file
-	--output-dir: folder where the file should be saved
-	--input-xml: name of the input xml from 1 
-	--xml-dir: path to the input-xml (needs to be seperated)
-	[--is-3D: 1 if the input is in 3D (default 0)]
-	[--axes-order-raw: the axes order of the raw input (default txyzc)]
-	[--axes-order-label: axes order of the label input (default xyzc, without t)]
+		--input-dir: path to the event sequence folder 
+		--input-raw: filepath to the HDF5 raw file 
+		--raw-filepath: filepath in the HDF5 raw file
+		--output-dir: folder where the file should be saved
+		--input-xml: name of the input xml from 1 
+		--xml-dir: path to the input-xml (needs to be seperated)
+		[--is-3D: 1 if the input is in 3D (default 0)]
+		[--axes-order-raw: the axes order of the raw input (default txyzc)]
+		[--axes-order-label: axes order of the label input (default xyzc, without t)]
 
 	Example:
-		```bash 
+	```bash 
 	python hdf_to_xml.py --input-dir <PATH> --input-raw <PATH> --raw-filepath <PATH> --input-xml <XML-NAME> --xml-dir <PATH> 
 	``` 
 
