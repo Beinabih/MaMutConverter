@@ -39,5 +39,6 @@ Usage:
 	```bash 
 	python hdf_to_xml.py --input-dir <PATH> --input-raw <PATH> --raw-filepath <PATH> --input-xml <XML-NAME> --xml-dir <PATH> 
 	``` 
+	A file called 'output.xml' will be saved to the <--output-dir Path>
 
 3. Open the output.xml with the MaMuT-plugin (MaMuT -- load MaMuT File)
