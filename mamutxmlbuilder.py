@@ -104,10 +104,11 @@ class MamutXmlBuilder(object):
         for allspots in self.root.iter('AllSpots'):
             allspots.set('nspots', str(self.cell_count))
 
-        self.indent(self.root)
+        MamutXmlBuilder.indent(self.root)
         self.tree.write(filename)
 
-    def indent(self, elem, level=0):
+    @staticmethod
+    def indent(elem, level=0):
         '''line indentation in the xml file '''
         i = "\n" + level*"  "
         j = "\n" + (level-1)*"  "
@@ -117,7 +118,7 @@ class MamutXmlBuilder(object):
             if not elem.tail or not elem.tail.strip():
                 elem.tail = i
             for subelem in elem:
-                self.indent(subelem, level+1)
+                MamutXmlBuilder.indent(subelem, level+1)
             if not elem.tail or not elem.tail.strip():
                 elem.tail = j
         else:
