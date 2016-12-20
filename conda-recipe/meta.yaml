@@ -1,0 +1,36 @@
+package:
+  name: mamutexport
+  
+  {% set tagged_version = GIT_DESCRIBE_TAG %}
+
+  # If we're using a non-tagged revision, append '.postN' to the version
+  {% if GIT_DESCRIBE_NUMBER|int != 0 %}
+    {% set tagged_version = tagged_version + '.post' + GIT_DESCRIBE_NUMBER %}
+  {% endif %}
+
+  version: {{tagged_version}}
+
+source:
+  path: ../
+
+build:
+  string: py{{CONDA_PY}}_{{PKG_BUILDNUM}}_g{{GIT_FULL_HASH[:7]}}
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - h5py
+    - numpy
+
+test:
+  imports:
+    - mamutexport
+
+about:
+  home: https://github.com/Beinabih/MaMutConverter
+  license: MIT
+  summary: 'Python module to export a tracking solution to MaMuT'

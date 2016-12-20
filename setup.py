@@ -8,7 +8,7 @@ setup(
     author="Jonas Massa",
     author_email="massa.jonas@iwr.uni-heidelberg.com",
     description=("Export tracking results (from ilastik) in the format required by MaMuT"),
-    license="BSD",
+    license="MIT",
     keywords="cell tracking ilastik fiji",
     url="https://github.com/Beinabih/MaMutConverter",
     packages=['mamutexport'],
