@@ -5,7 +5,7 @@ import optparse
 import numpy as np
 import h5py
 from skimage.external import tifffile
-import mamutxmlbuilder
+from mamutexport import mamutxmlbuilder
 
 def getFeatures(rawimage, labelimage, is_3D):
     '''get centroids and radius of a cell'''
