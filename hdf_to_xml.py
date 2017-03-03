@@ -253,7 +253,6 @@ if __name__ == '__main__':
             # add spots, including the trackId as name and a per-track random color
             for i in np.unique(labels):
                 if i != 0:
-                    trackId = track_ref_dic[t, i]
                     xpos = regionCentroid[i, 0]
                     ypos = regionCentroid[i, 1]
 
@@ -278,9 +277,15 @@ if __name__ == '__main__':
                                 for j in xrange((np.array(features[keys])).shape[1]):
                                     featureDict[convertKeyName(keys) + '_{}'.format(str(j))] = features[keys][i, j]
 
+                    try:
+                        trackId = track_ref_dic[t, i]
+                    except KeyError:
+                        trackId = next_track_id
+                        next_track_id += 1
+                        randomColorPerTrack[trackId] = np.random.random()
+                        
                     featureDict['Track_color'] = randomColorPerTrack[trackId]
                     featureDict['LabelimageId'] = i
-
                     builder.addSpot(t, 'track-{}'.format(trackId), ids[t][i], xpos, ypos, zpos, radius, featureDict)
 
     #'height= 'instead of 'height =' gives a wrong picture position
