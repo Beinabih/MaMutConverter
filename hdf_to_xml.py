@@ -187,6 +187,7 @@ if __name__ == '__main__':
     #     raw_images = np.rollaxis(raw_images, 1, 4)
 
     setFeatures(builder, raw_images[0], images[1], opt.is_3D, opt.axes_order_label)
+    builder.addFeatureName("LabelimageId", "LabelimageId", "labelid", False)
     builder.addFeatureName("Track_color", "Track_color", "trackcol", False)
     builder.addTrackFeatureName("Track_color", "Track_color", "trackcol", False)
 
@@ -278,6 +279,7 @@ if __name__ == '__main__':
                                     featureDict[convertKeyName(keys) + '_{}'.format(str(j))] = features[keys][i, j]
 
                     featureDict['Track_color'] = randomColorPerTrack[trackId]
+                    featureDict['LabelimageId'] = i
 
                     builder.addSpot(t, 'track-{}'.format(trackId), ids[t][i], xpos, ypos, zpos, radius, featureDict)
 
