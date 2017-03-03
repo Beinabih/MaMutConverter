@@ -253,7 +253,7 @@ if __name__ == '__main__':
                 for m in move_table:
                     if not (has_table and m[0] in split_table[:, 0]):
                         if (t-1, m[0]) in track_ref_dic:
-                            track_id = track_ref_dic[t, m[1]]
+                            track_id = track_ref_dic[t-1, m[0]]
                         else:
                             track_id = next_track_id
                             next_track_id += 1
