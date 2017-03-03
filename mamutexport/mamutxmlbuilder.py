@@ -26,7 +26,18 @@ class MamutXmlBuilder(object):
         else:
             newfeature.set('isint', 'false')
 
-    def addSpot(self, timeframe, uuid, xpos, ypos, zpos, radius=1.0, featureDict=None):
+    def addTrackFeatureName(self, featureName, featureDisplayName, shortName, isInt):
+        '''
+        Defines the used features at the beginning of the XML file.
+        '''
+        newfeature = ET.SubElement(self.root[0][0][2], 'Feature dimension="NONE" feature="{}" name="{}" shortname="{}"'.format(featureName, featureDisplayName, shortName))
+        if isInt:
+            newfeature.set('isint', 'true')
+        else:
+            newfeature.set('isint', 'false')
+
+
+    def addSpot(self, timeframe, name, uuid, xpos, ypos, zpos, radius=1.0, featureDict=None):
         '''
         Adds spots and their features in the XML file
         '''
@@ -38,9 +49,9 @@ class MamutXmlBuilder(object):
             spotsInFrame = self.spotsPerFrame[timeframe]
 
         spot = ET.SubElement(spotsInFrame,
-                            '''Spot ID="{}" name="center" VISIBILITY="1" POSITION_T="{}"
+                            '''Spot ID="{}" name="{}" VISIBILITY="1" POSITION_T="{}"
                                POSITION_Z="{}" POSITION_Y="{}" RADIUS="{}" FRAME="{}" 
-                               POSITION_X="{}" QUALITY="3.0"'''.format(str(uuid), str(float(timeframe)), str(zpos), str(ypos), str(float(radius)),
+                               POSITION_X="{}" QUALITY="3.0"'''.format(str(uuid), str(name), str(float(timeframe)), str(zpos), str(ypos), str(float(radius)),
                                                                         str(timeframe), str(xpos)))
 
         if featureDict is not None:
@@ -48,6 +59,12 @@ class MamutXmlBuilder(object):
                 spot.set(k, str(np.nan_to_num(v)))
 
         self.cell_count += 1
+
+    def setTrackFeatures(self, trackId, featureDict):
+        track = self.getOrCreateTrackElement(trackId)
+
+        for k,v in featureDict.iteritems():
+            track.set(k, str(v))
 
     def getOrCreateTrackElement(self, trackId):
         '''
