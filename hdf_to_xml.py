@@ -190,13 +190,61 @@ if __name__ == '__main__':
     #     raw_images = np.rollaxis(raw_images, 1, 4)
 
     setFeatures(builder, raw_images[0], images[1], opt.is_3D, opt.axes_order_label)
+    builder.addFeatureName("LabelimageId", "LabelimageId", "labelid", False)
+    builder.addFeatureName("Track_color", "Track_color", "trackcol", False)
+    builder.addTrackFeatureName("Track_color", "Track_color", "trackcol", False)
 
     for t, file_path in enumerate(images):
         print "timestep: ", t
         rawimage_filename = file_path
 
         with h5py.File(rawimage_filename, 'r') as h5raw:
+            # write splits in file
+            try:
+                split_table = h5raw['/tracking/Splits'].value
+                for s in split_table:
+                    print 'split_table', s
+                    if (t-1, s[0]) in track_ref_dic:
+                        track_id = track_ref_dic[t-1, s[0]]
+                    else:
+                        track_id = next_track_id
+                        next_track_id += 1
+                        track_ref_dic[t-1, s[0]] = track_id
+                    builder.addSplit(track_id, ids[t-1][s[0]], [ids[t][s[1]], ids[t][s[2]]])
+                    track_ref_dic[t, s[1]] = track_id
+                    track_ref_dic[t, s[2]] = track_id
+                    has_table = True
+            except KeyError:
+                print "no split in the sequence"
+                has_table = False
 
+            # write tracking in file
+            try:
+                move_table = h5raw['/tracking/Moves'].value
+                for m in move_table:
+                    if not (has_table and m[0] in split_table[:, 0]):
+                        if (t-1, m[0]) in track_ref_dic:
+                            track_id = track_ref_dic[t-1, m[0]]
+                        else:
+                            track_id = next_track_id
+                            next_track_id += 1
+                            track_ref_dic[t-1, m[0]] = track_id
+                        builder.addLink(track_id, ids[t-1][m[0]], ids[t][m[1]])
+                        track_ref_dic[t, m[1]] = track_id
+            except KeyError:
+                print "no tracking in the event sequence"
+
+    randomColorPerTrack = {}
+    for trackId in range(next_track_id):
+        randomColorPerTrack[trackId] = np.random.random()
+        builder.setTrackFeatures(trackId, {'Track_color': randomColorPerTrack[trackId]})
+
+    # Need second for-loop so that we know the trackId for objects in the first frame 
+    for t, file_path in enumerate(images):
+        print "timestep: ", t
+        rawimage_filename = file_path
+
+        with h5py.File(rawimage_filename, 'r') as h5raw:
             labels = h5raw['/segmentation/labels'].value
             labels = checkAxes(labels, opt.is_3D, opt.axes_order_label, False)
             # labels = np.swapaxes(labels, 0, 1)
@@ -205,6 +253,7 @@ if __name__ == '__main__':
             regionCentroid, regionRadii, features = getFeatures(raw_images[t], labels, opt.is_3D)
             cell_count += regionCentroid.shape[0]-1
 
+            # add spots, including the trackId as name and a per-track random color
             for i in np.unique(labels):
                 if i != 0:
                     xpos = regionCentroid[i, 0]
@@ -231,39 +280,16 @@ if __name__ == '__main__':
                                 for j in xrange((np.array(features[keys])).shape[1]):
                                     featureDict[convertKeyName(keys) + '_{}'.format(str(j))] = features[keys][i, j]
 
-                    builder.addSpot(t, ids[t][i], xpos, ypos, zpos, radius, featureDict)
-
-            # write splits in file
-            try:
-                split_table = h5raw['/tracking/Splits'].value
-                for s in split_table:
-                    print 'split_table', s
-                    if (t-1, s[0]) in track_ref_dic:
-                        track_id = track_ref_dic[t-1, s[0]]
-                    else:
-                        track_id = next_track_id
+                    try:
+                        trackId = track_ref_dic[t, i]
+                    except KeyError:
+                        trackId = next_track_id
                         next_track_id += 1
-                    builder.addSplit(track_id, ids[t-1][s[0]], [ids[t][s[1]], ids[t][s[2]]])
-                    track_ref_dic[t, s[1]] = track_id
-                    track_ref_dic[t, s[2]] = track_id
-                    has_table = True
-            except KeyError:
-                print "no split in the sequence"
-                has_table = False
-            # write tracking in file
-            try:
-                move_table = h5raw['/tracking/Moves'].value
-                for m in move_table:
-                    if not (has_table and m[0] in split_table[:, 0]):
-                        if (t-1, m[0]) in track_ref_dic:
-                            track_id = track_ref_dic[t, m[1]]
-                        else:
-                            track_id = next_track_id
-                            next_track_id += 1
-                        builder.addLink(track_id, ids[t-1][m[0]], ids[t][m[1]])
-                        track_ref_dic[t, m[1]] = track_id
-            except KeyError:
-                print "no tracking in the event sequence"
+                        randomColorPerTrack[trackId] = np.random.random()
+                        
+                    featureDict['Track_color'] = randomColorPerTrack[trackId]
+                    featureDict['LabelimageId'] = i
+                    builder.addSpot(t, 'track-{}'.format(trackId), ids[t][i], xpos, ypos, zpos, radius, featureDict)
 
     #'height= 'instead of 'height =' gives a wrong picture position
     builder.setBigDataViewerImagePath(opt.xml_dir, opt.input_xml)
