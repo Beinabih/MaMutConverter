@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TrackMate version="3.4.0">
+  <Model spatialunits="pixels" timeunits="frames">
+    <FeatureDeclarations>
+      <SpotFeatures>
+        <Feature feature="QUALITY" name="Quality" shortname="Quality" dimension="QUALITY" isint="false" />
+        <Feature feature="POSITION_X" name="X" shortname="X" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_Y" name="Y" shortname="Y" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_Z" name="Z" shortname="Z" dimension="POSITION" isint="false" />
+        <Feature feature="POSITION_T" name="T" shortname="T" dimension="TIME" isint="false" />
+        <Feature feature="FRAME" name="Frame" shortname="Frame" dimension="NONE" isint="true" />
+        <Feature feature="RADIUS" name="Radius" shortname="R" dimension="LENGTH" isint="false" />
+        <Feature feature="VISIBILITY" name="Visibility" shortname="Visibility" dimension="NONE" isint="true" />
+        <Feature feature="SOURCE_ID" name="Source ID" shortname="Source" dimension="NONE" isint="true" />
+        <Feature feature="CELL_DIVISION_TIME" name="Cell division time" shortname="Cell div. time" dimension="TIME" isint="false" />
+        <Feature feature="MANUAL_COLOR" name="Manual spot color" shortname="Spot color" dimension="NONE" isint="true" />
+      </SpotFeatures>
+      <EdgeFeatures>
+        <Feature feature="SPOT_SOURCE_ID" name="Source spot ID" shortname="Source ID" dimension="NONE" isint="true" />
+        <Feature feature="SPOT_TARGET_ID" name="Target spot ID" shortname="Target ID" dimension="NONE" isint="true" />
+        <Feature feature="LINK_COST" name="Link cost" shortname="Cost" dimension="NONE" isint="false" />
+        <Feature feature="VELOCITY" name="Velocity" shortname="V" dimension="VELOCITY" isint="false" />
+        <Feature feature="DISPLACEMENT" name="Displacement" shortname="D" dimension="LENGTH" isint="false" />
+        <Feature feature="MANUAL_COLOR" name="Manual edge color" shortname="Edge color" dimension="NONE" isint="true" />
+      </EdgeFeatures>
+      <TrackFeatures>
+        <Feature feature="TRACK_INDEX" name="Track index" shortname="Index" dimension="NONE" isint="true" />
+        <Feature feature="TRACK_ID" name="Track ID" shortname="ID" dimension="NONE" isint="true" />
+        <Feature feature="TRACK_DURATION" name="Duration of track" shortname="Duration" dimension="TIME" isint="false" />
+        <Feature feature="TRACK_START" name="Track start" shortname="T start" dimension="TIME" isint="false" />
+        <Feature feature="TRACK_STOP" name="Track stop" shortname="T stop" dimension="TIME" isint="false" />
+        <Feature feature="TRACK_DISPLACEMENT" name="Track displacement" shortname="Displacement" dimension="LENGTH" isint="false" />
+        <Feature feature="NUMBER_SPOTS" name="Number of spots in track" shortname="N spots" dimension="NONE" isint="true" />
+        <Feature feature="NUMBER_GAPS" name="Number of gaps" shortname="Gaps" dimension="NONE" isint="true" />
+        <Feature feature="LONGEST_GAP" name="Longest gap" shortname="Longest gap" dimension="NONE" isint="true" />
+        <Feature feature="NUMBER_SPLITS" name="Number of split events" shortname="Splits" dimension="NONE" isint="true" />
+        <Feature feature="NUMBER_MERGES" name="Number of merge events" shortname="Merges" dimension="NONE" isint="true" />
+        <Feature feature="NUMBER_COMPLEX" name="Complex points" shortname="Complex" dimension="NONE" isint="true" />
+        <Feature feature="DIVISION_TIME_MEAN" name="Mean cell division time" shortname="Mean div. time" dimension="TIME" isint="false" />
+        <Feature feature="DIVISION_TIME_STD" name="Std cell division time" shortname="Std div. time" dimension="TIME" isint="false" />
+      </TrackFeatures>
+    </FeatureDeclarations>
+  </Model>
+  <Settings>
+    <InitialSpotFilter feature="QUALITY" value="0.0" isabove="true" />
+    <SpotFilterCollection />
+    <TrackFilterCollection />
+    <AnalyzerCollection>
+      <SpotAnalyzers>
+        <Analyzer key="Spot Source ID" />
+        <Analyzer key="CELL_DIVISION_TIME_ON_SPOTS" />
+        <Analyzer key="MANUAL_SPOT_COLOR_ANALYZER" />
+      </SpotAnalyzers>
+      <EdgeAnalyzers>
+        <Analyzer key="Edge target" />
+        <Analyzer key="Edge velocity" />
+        <Analyzer key="MANUAL_EDGE_COLOR_ANALYZER" />
+      </EdgeAnalyzers>
+      <TrackAnalyzers>
+        <Analyzer key="Track index" />
+        <Analyzer key="Track duration" />
+        <Analyzer key="Branching analyzer" />
+        <Analyzer key="CELL_DIVISION_TIME_ANALYZER" />
+      </TrackAnalyzers>
+    </AnalyzerCollection>
+  </Settings>
+</TrackMate>
