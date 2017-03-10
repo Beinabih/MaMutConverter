@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import numpy as np
+import os
 
 class MamutXmlBuilder(object):
     '''
@@ -7,7 +8,9 @@ class MamutXmlBuilder(object):
     '''
 
     def __init__(self):
-        self.tree = ET.parse('raw_input.xml')
+        path = os.path.dirname(__file__)
+        print path
+        self.tree = ET.parse(os.path.join(path,'raw_input.xml'))
         self.root = self.tree.getroot()
         self.allspots = ET.SubElement(self.root[0], 'AllSpots')
         self.alltracks = ET.SubElement(self.root[0], 'AllTracks')
