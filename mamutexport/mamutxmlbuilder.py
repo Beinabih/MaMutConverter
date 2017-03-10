@@ -9,7 +9,6 @@ class MamutXmlBuilder(object):
 
     def __init__(self):
         path = os.path.dirname(__file__)
-        print path
         self.tree = ET.parse(os.path.join(path,'raw_input.xml'))
         self.root = self.tree.getroot()
         self.allspots = ET.SubElement(self.root[0], 'AllSpots')
