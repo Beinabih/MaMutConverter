@@ -130,9 +130,12 @@ def checkAxes(volume, is_3D, axes_order, raw):
         if is_3D == 1:
             if axes_order != "xyzc":
                 volume = changeAxesOrder(volume, axes_order, output_axes='xyzc')
+        elif axes_order == "txyzc":
+                volume = changeAxesOrder(np.expand_dims(volume.squeeze(), axis=-1), 'xyc', output_axes='xyc')
         else:
             if axes_order != "xyc":
                 volume = changeAxesOrder(volume, axes_order, output_axes='xyc')
+            
 
     return volume
 
