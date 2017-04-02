@@ -12,6 +12,7 @@ setup(
     keywords="cell tracking ilastik fiji",
     url="https://github.com/Beinabih/MaMutConverter",
     packages=['mamutexport'],
+    package_data={'mamutexport': ['raw_input.xml']},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
