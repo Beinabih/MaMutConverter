@@ -14,6 +14,7 @@ source:
   path: ../
 
 build:
+  number: 0
   string: py{{CONDA_PY}}_{{PKG_BUILDNUM}}_g{{GIT_FULL_HASH[:7]}}
 
 requirements:
