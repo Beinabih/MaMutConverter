@@ -1,7 +1,6 @@
 import xml.etree.ElementTree as ET
 import numpy as np
 import h5py
-import mamutxmlbuilder
 
 class BigDataViewerVolumeExporter(object):
     '''
@@ -85,6 +84,7 @@ class BigDataViewerVolumeExporter(object):
         self.tree.write(filename)
 
 if __name__ == '__main__':
+    from mamutexport import mamutxmlbuilder
     bve = BigDataViewerVolumeExporter('myhdf5File.h5', 'exported_data', [123, 654, 789])
     bve.addTimePoint(0)
     bve.addTimePoint(1)

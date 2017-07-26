@@ -57,7 +57,7 @@ class MamutXmlBuilder(object):
                                                                         str(timeframe), str(xpos)))
 
         if featureDict is not None:
-            for k, v in featureDict.iteritems():
+            for k, v in featureDict.items():
                 spot.set(k, str(np.nan_to_num(v)))
 
         self.cell_count += 1
@@ -65,7 +65,7 @@ class MamutXmlBuilder(object):
     def setTrackFeatures(self, trackId, featureDict):
         track = self.getOrCreateTrackElement(trackId)
 
-        for k,v in featureDict.iteritems():
+        for k,v in featureDict.items():
             track.set(k, str(v))
 
     def getOrCreateTrackElement(self, trackId):
